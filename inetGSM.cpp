@@ -62,6 +62,65 @@ int InetGSM::httpGET(const char* server, int port, const char* path, char* resul
      return res;
 }
 
+int InetGSM::httpPUT(const char* server, int port, const char* path, char* parameters, const char*header, char* result, int resultlength)
+{
+    boolean connected=false;
+    int n_of_at=0;
+    char itoaBuffer[8];
+    int num_char;
+    char end_c[2];
+    end_c[0]=0x1a;
+    end_c[1]='\0';
+
+    while(n_of_at<3) {
+        if(!connectTCP(server, port)) {
+#ifdef DEBUG_ON
+            Serial.println("DB:NOT CONN");
+#endif
+            n_of_at++;
+        } else {
+            connected=true;
+            n_of_at=3;
+        }
+    }
+
+    if(!connected) return 0;
+
+    gsm.SimpleWrite("PUT ");
+    gsm.SimpleWrite(path);
+    gsm.SimpleWrite(" HTTP/1.1\r\nHost: ");
+    gsm.SimpleWrite(server);
+    gsm.SimpleWrite("\r\n");
+    gsm.SimpleWrite("User-Agent: Arduino\r\n");
+    gsm.SimpleWrite("Content-Type: application/x-www-form-urlencoded\r\n");
+    gsm.SimpleWrite("X-ApiKey: oeyxzwo2JWX3mnKFA9JuzCZ5mJSF8vB4flLfAW0hUYEXsh3O\r\n");
+    gsm.SimpleWrite("Content-Length: ");
+    itoa(strlen(parameters),itoaBuffer,10);
+    gsm.SimpleWrite(itoaBuffer);
+    gsm.SimpleWrite("\r\n\r\n");
+    gsm.SimpleWrite(parameters);
+    gsm.SimpleWrite("\r\n\r\n");
+    gsm.SimpleWrite(end_c);
+
+    switch(gsm.WaitResp(10000, 10, "SEND OK")) {
+        case RX_TMOUT_ERR:
+            return 0;
+            break;
+        case RX_FINISHED_STR_NOT_RECV:
+            return 0;
+            break;
+    }
+
+    delay(50);
+#ifdef DEBUG_ON
+    Serial.println("DB:SENT");
+#endif
+
+    int res= gsm.read(result, resultlength);
+    //gsm.disconnectTCP();
+    return res;
+}
+
 int InetGSM::httpPOST(const char* server, int port, const char* path, const char* parameters, char* result, int resultlength)
 {
      boolean connected=false;
